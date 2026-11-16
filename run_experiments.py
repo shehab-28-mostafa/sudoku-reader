@@ -14,10 +14,13 @@ a = ap.parse_args()
 if not a.plots_only:
     ev.exp_csp(a.seeds, a.n_csp)
     ev.exp_search(a.seeds, a.n)
+    ev.exp_confidence(a.seeds)
 import json
 sr = json.loads((ev.RESULTS / "exp_search.json").read_text(encoding="utf-8"))
 cr = json.loads((ev.RESULTS / "exp_csp.json").read_text(encoding="utf-8"))
 (ev.RESULTS / "tables.md").write_text(ev.tables(sr, cr), encoding="utf-8")
+conf = json.loads((ev.RESULTS / "exp_confidence.json").read_text(encoding="utf-8"))
+(ev.RESULTS / "confidence.md").write_text(ev.confidence_table(conf), encoding="utf-8")
 ev.plots(sr, cr)
 ev.nn_plots()
 print("Wrote results/tables.md and plots")

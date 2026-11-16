@@ -268,3 +268,45 @@ def nn_plots(outdir=RESULTS):
     ax[2].plot([0, 1], [0, 1], "k--", lw=.8); ax[2].set_xlabel("confidence"); ax[2].set_ylabel("accuracy")
     ax[2].set_title("Reliability diagram (MLP, test)"); ax[2].legend(); ax[2].grid(alpha=.3)
     fig.tight_layout(); fig.savefig(outdir / "nn_evaluation.png", dpi=130); plt.close(fig)
+
+
+def exp_confidence(seeds=5, n=40, givens=30, out=RESULTS / "exp_confidence.json", log=print):
+    """How well do the confidence tiers (high/medium/low) separate right from wrong
+    answers? Solvable-goal A*; misread levels 0-4; only puzzles the system 'solved'."""
+    model, pool = _load()
+    records = json.loads(out.read_text(encoding="utf-8")) if out.exists() else []
+    done = {r["seed"] for r in records}
+    for s in range(seeds):
+        if s in done:
+            continue
+        rng = np.random.default_rng(3000 + s)
+        for lvl in LEVELS:
+            for _ in range(n):
+                inst = make_instance(rng, pool, givens, lvl)
+                r = run_pipeline(inst["images"], model, strategy="astar")
+                records.append(dict(seed=s, level=lvl, solved=r.status == "solved",
+                                    exact=r.status == "solved" and r.solution == inst["solution"],
+                                    tier=r.confidence))
+        out.write_text(json.dumps(records), encoding="utf-8")
+        log(f"[exp_confidence] seed {s} done")
+    return records
+
+
+def confidence_table(rec) -> str:
+    solved = [r for r in rec if r["solved"]]
+    wrong = [r for r in solved if not r["exact"]]
+    L = ["## Confidence flags (solvable goal, A*, misread levels 0-4 pooled)\n",
+         f"{len(rec)} puzzles, {len(solved)} solved, {len(wrong)} of those solved answers are wrong "
+         f"(valid Sudoku but not the written one).\n",
+         "| tier | answers | % exactly right | share of all wrong answers caught |", "|---|---|---|---|"]
+    for t in ("high", "medium", "low"):
+        rs = [r for r in solved if r["tier"] == t]
+        if rs:
+            right = 100 * np.mean([r["exact"] for r in rs])
+            caught = 100 * sum(not r["exact"] for r in rs) / max(len(wrong), 1)
+            L.append(f"| {t} | {len(rs)} | {right:.1f} | {caught:.1f} |")
+    flagged = [r for r in wrong if r["tier"] != "high"]
+    fa = [r for r in solved if r["exact"] and r["tier"] != "high"]
+    L.append(f"\nWrong answers flagged (medium or low): {100 * len(flagged) / max(len(wrong), 1):.1f} %. "
+             f"Correct answers flagged (false alarms): {100 * len(fa) / max(sum(r['exact'] for r in solved), 1):.1f} %.")
+    return "\n".join(L)
