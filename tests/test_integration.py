@@ -83,3 +83,34 @@ def test_impossible_3_random_mode_reports_unreadable(model):
     imgs = build_images(misreads={0: (3, 0.97, 0.01)})
     r = run_pipeline(imgs, model, mode="random", rng=np.random.default_rng(0), random_budget=5)
     assert r.status == "unreadable" and "unreadable" in r.message
+
+
+# --------------------------- CONFIDENCE FLAGS ---------------------------
+def test_confidence_high_for_clean_unique_solution(model):
+    r = run_pipeline(build_images(), model)
+    assert r.confidence == "high" and r.warnings == [] and "WARNING" not in r.message
+
+
+def test_confidence_low_when_solution_not_unique(model):
+    p = PUZ[:]
+    for i in (0, 1, 2, 9, 10, 11, 18, 19, 20):     # clear a whole box -> many solutions
+        p[i] = 0
+    r = run_pipeline(build_images(p), model)
+    assert r.status == "solved" and r.confidence == "low"
+    assert "more than one solution" in r.message and "WARNING" in r.message
+
+
+def test_confidence_medium_for_very_unlikely_correction(model):
+    r = run_pipeline(build_images(misreads={0: (3, 0.97, 0.01)}), model)   # cost ~4.6 nats
+    assert r.status == "solved" and r.solution == SOL
+    assert r.confidence == "medium" and "very unlikely" in r.message
+
+
+def test_confidence_medium_when_budget_used(model):
+    r = run_pipeline(build_images(misreads={0: (3, 0.52, 0.45)}), model, max_corrections=1)
+    assert r.status == "solved" and r.confidence == "medium" and "allowed corrections were used" in r.message
+
+
+def test_confidence_not_set_when_unreadable(model):
+    r = run_pipeline(build_images(misreads={0: (3, 0.97, 0.01)}), model, max_corrections=0)
+    assert r.status == "unreadable" and r.confidence == "n/a" and r.warnings == []

@@ -34,10 +34,48 @@ class PipelineResult:
     goal_tests: int = 0
     message: str = ""
     least_confident: list = field(default_factory=list)
+    confidence: str = "n/a"           # "high" | "medium" | "low" (only when solved)
+    warnings: list = field(default_factory=list)
 
     def correction_log(self) -> list[str]:
         return [f"{cell_name(c)}: read {o} -> {n} (cost {k:.3f})"
                 for c, o, n, k in self.corrections]
+
+
+EXPENSIVE_CORRECTION = 2.5   # nats: NN was >12x more sure of the original digit
+
+
+def assess_confidence(out: PipelineResult, max_corrections: int = 3) -> None:
+    """Flag solutions that may be valid Sudokus but not the *true* one.
+
+    low    : the corrected puzzle has several solutions (the answer is a guess)
+    medium : a correction was very unlikely (> 2.5 nats) or the whole correction
+             budget was used (more misreads may remain)
+    high   : otherwise
+    Measured on generated instances (see results/confidence.md): 'low' never fired
+    on a correct answer; 'medium' catches many more wrong answers at the price of
+    some false alarms."""
+    if out.status != "solved":
+        return
+    fixed = list(out.reading)
+    for c, _, n, _ in out.corrections:
+        fixed[c] = n
+    out.warnings = []
+    level = "high"
+    if solve(fixed, fc=True, ac3=True, order="mrv", max_solutions=2).n_solutions > 1:
+        level = "low"
+        out.warnings.append("the corrected puzzle has more than one solution, so this answer is a guess")
+    costly = [(c, o, n, k) for c, o, n, k in out.corrections if k > EXPENSIVE_CORRECTION]
+    if costly:
+        level = "low" if level == "low" else "medium"
+        out.warnings.append("very unlikely correction(s): " + "; ".join(
+            f"{cell_name(c)} {o}->{n} (cost {k:.1f})" for c, o, n, k in costly))
+    if len(out.corrections) >= max_corrections > 0:
+        level = "low" if level == "low" else "medium"
+        out.warnings.append(f"all {max_corrections} allowed corrections were used; more misreads may remain")
+    out.confidence = level
+    if level != "high":
+        out.message += f" | WARNING, {level} confidence: " + " / ".join(out.warnings)
 
 
 def read_grid(images: np.ndarray, model):
@@ -86,6 +124,7 @@ def run_pipeline(images, model, mode="nn", strategy="ucs", goal="solvable",
         out.goal_tests = 1
         if ok:
             out.status, out.solution = "solved", res.solution
+            assess_confidence(out, max_corrections)
         else:
             out.message = f"unreadable: {out.ac3_reason or 'no solution'} (no correction attempted)"
         return out
@@ -98,6 +137,7 @@ def run_pipeline(images, model, mode="nn", strategy="ucs", goal="solvable",
             out.status, out.solution = "solved", res.solution
             out.corrections = [(c, problem.read[c], d, problem._cost(c, d)) for c, d in state]
             out.cost = problem.g_cost(state)
+            assess_confidence(out, max_corrections)
         else:
             out.message = "unreadable: random corrections found no solvable puzzle"
         return out
@@ -111,6 +151,7 @@ def run_pipeline(images, model, mode="nn", strategy="ucs", goal="solvable",
         out.corrections, out.cost = sr.corrections, sr.cost
         out.message = ("solved without corrections" if not sr.corrections
                        else f"solved with {len(sr.corrections)} correction(s)")
+        assess_confidence(out, max_corrections)
     else:
         cells = ", ".join(cell_name(c) for c in sr.least_confident)
         out.message = f"unreadable: {sr.reason}. Least confident cells: {cells}"
