@@ -74,7 +74,7 @@ def _random_search(problem: CorrectionProblem, rng, budget):
 
 def run_pipeline(images, model, mode="nn", strategy="ucs", goal="solvable",
                  max_corrections=3, n_uncertain=20, k_alt=3, max_expansions=3000,
-                 rng=None, random_budget=300) -> PipelineResult:
+                 rng=None, random_budget=300, trace=None) -> PipelineResult:
     reading, blank, proba = read_grid(images, model)
     out = PipelineResult("unreadable", reading=reading, blank=blank, proba=proba)
     out.ac3_ok, out.ac3_reason, _ = ac3_detect(reading)
@@ -102,7 +102,7 @@ def run_pipeline(images, model, mode="nn", strategy="ucs", goal="solvable",
             out.message = "unreadable: random corrections found no solvable puzzle"
         return out
 
-    sr = search(problem, strategy, max_expansions)
+    sr = search(problem, strategy, max_expansions, trace)
     out.search = sr
     out.nodes_expanded, out.nodes_generated, out.goal_tests = (
         sr.nodes_expanded, sr.nodes_generated, sr.goal_tests)

@@ -26,7 +26,8 @@ SEARCH_RUNS = [("ucs", dict(mode="nn", strategy="ucs")),
                ("greedy", dict(mode="nn", strategy="greedy")),
                ("astar", dict(mode="nn", strategy="astar")),
                ("none", dict(mode="none")),
-               ("random", dict(mode="random"))]
+               ("random", dict(mode="random")),
+               ("astar_unique", dict(mode="nn", strategy="astar", goal="unique"))]
 CSP_CONFIGS = [("BT", dict()), ("BT+FC", dict(fc=True)), ("BT+FC+AC-3", dict(fc=True, ac3=True))]
 
 
@@ -119,7 +120,7 @@ def tables(search_rec, csp_rec) -> str:
     L = []
     n_seeds = len({r["seed"] for r in search_rec})
     L.append(f"_All numbers: mean ± std over {n_seeds} seeds (per-seed averages of 100 puzzles/level)._\n")
-    names = {"ucs": "UCS", "greedy": "Greedy", "astar": "A*", "none": "No correction", "random": "Random"}
+    names = {"ucs": "UCS", "greedy": "Greedy", "astar": "A*", "none": "No correction", "random": "Random", "astar_unique": "NN-guided, unique goal"}
 
     # --- Experiment 1
     L.append("## Experiment 1 - UCS vs Greedy vs A* (30 givens, max 3 corrections)\n")
@@ -167,10 +168,10 @@ def tables(search_rec, csp_rec) -> str:
     for metric, title, pct in [("exact", "Exact-solution recovery rate (%)", True),
                                ("solved", "Any solvable puzzle found (%)", True),
                                ("goal_tests", "Goal tests (CSP calls)", False)]:
-        agg = _agg(search_rec, ("run", "level"), metric, lambda r: r["run"] in ("ucs", "none", "random"))
-        L.append(f"**{title}**\n\n| misreads | NN-guided (UCS) | No correction | Random |\n|---|---|---|---|")
+        agg = _agg(search_rec, ("run", "level"), metric, lambda r: r["run"] in ("ucs", "none", "random", "astar_unique"))
+        L.append(f"**{title}**\n\n| misreads | NN-guided (UCS, solvable goal) | No correction | Random | NN-guided (A*, unique-solution goal, extension) |\n|---|---|---|---|---|")
         for lvl in LEVELS:
-            L.append(f"| {lvl} | " + " | ".join(_fmt(agg[(k, lvl)], pct) for k in ("ucs", "none", "random")) + " |")
+            L.append(f"| {lvl} | " + " | ".join(_fmt(agg[(k, lvl)], pct) for k in ("ucs", "none", "random", "astar_unique")) + " |")
         L.append("")
 
     # --- Experiment 2
@@ -198,7 +199,7 @@ def plots(search_rec, csp_rec, outdir=RESULTS):
     import matplotlib.pyplot as plt
 
     outdir.mkdir(exist_ok=True)
-    names = {"ucs": "UCS", "greedy": "Greedy", "astar": "A*", "none": "No correction", "random": "Random"}
+    names = {"ucs": "UCS", "greedy": "Greedy", "astar": "A*", "none": "No correction", "random": "Random", "astar_unique": "NN-guided, unique goal"}
 
     def lines(ax, runs, metric, pct=False, log=False):
         agg = _agg(search_rec, ("run", "level"), metric)
@@ -216,8 +217,8 @@ def plots(search_rec, csp_rec, outdir=RESULTS):
     fig.suptitle("Experiment 1: UCS vs Greedy vs A*"); fig.tight_layout(); fig.savefig(outdir / "exp1_search.png", dpi=130); plt.close(fig)
 
     fig, ax = plt.subplots(1, 2, figsize=(11, 4))
-    lines(ax[0], ["ucs", "none", "random"], "exact", pct=True); ax[0].set_ylabel("exact recovery (%)")
-    lines(ax[1], ["ucs", "none", "random"], "goal_tests", log=True); ax[1].set_ylabel("CSP calls (log)")
+    lines(ax[0], ["ucs", "astar_unique", "none", "random"], "exact", pct=True); ax[0].set_ylabel("exact recovery (%)")
+    lines(ax[1], ["ucs", "astar_unique", "none", "random"], "goal_tests", log=True); ax[1].set_ylabel("CSP calls (log)")
     fig.suptitle("Experiment 3: NN-guided vs no vs random correction"); fig.tight_layout(); fig.savefig(outdir / "exp3_correction.png", dpi=130); plt.close(fig)
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 7))

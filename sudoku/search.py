@@ -117,7 +117,8 @@ class CorrectionProblem:
         return ok, res
 
 
-def search(problem: CorrectionProblem, strategy="ucs", max_expansions=20000) -> SearchResult:
+def search(problem: CorrectionProblem, strategy="ucs", max_expansions=20000,
+           trace: list | None = None) -> SearchResult:
     assert strategy in ("ucs", "greedy", "astar")
     out = SearchResult("unreadable")
     counter = itertools.count()
@@ -141,6 +142,9 @@ def search(problem: CorrectionProblem, strategy="ucs", max_expansions=20000) -> 
             continue                      # dead state (heuristic proves no completion)
         out.goal_tests += 1
         ok, res = problem.is_goal(state)
+        if trace is not None:
+            trace.append(dict(order=out.goal_tests, state=state, g=problem.g_cost(state),
+                              priority=key[0], goal=ok))
         if ok:
             out.status, out.csp, out.grid = "solved", res, problem.grid(state)
             out.corrections = [(c, problem.read[c], d, problem._cost(c, d)) for c, d in state]
