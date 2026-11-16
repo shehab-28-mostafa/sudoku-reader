@@ -12,7 +12,7 @@
 | 8 | README with pinned requirements and commands | Done | `README.md`, `requirements.txt` |
 | 9 | >=5 normal, >=3 edge, >=2 impossible tests ("no solution" message) | Done: 59 tests (e.g. 6 normal, 4 edge, 3 impossible at system level, 5 confidence-flag tests) | `tests/test_integration.py` + others |
 | 10 | 3 experiments, >=5 seeds, mean +- std, tables + plots | Done (5 seeds) | `results/tables.md`, `results/exp*.png` |
-| 11 | Report (max 12 pages) | Draft written from real results; **you review/edit** | `docs/report.md` |
+| 11 | Report (max 12 pages) | Draft written from real results; **you review/edit** | `docs/report.docx` |
 | 12 | 10-min talk + 5-min live demo | Outline and demo script prepared; **you present** | `docs/presentation.md` |
 | 13 | Individual contribution statements + git log | Template only: **each member writes theirs**; git log included | `docs/contributions.md`, `git log` |
 
