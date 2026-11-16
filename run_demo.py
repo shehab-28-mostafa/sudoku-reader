@@ -29,6 +29,20 @@ pool = DigitPool(d["x_test"], d["y_test"], model.predict_proba(d["x_test"]))
 rng = np.random.default_rng(args.seed)
 
 
+def save_fig(fig, name):
+    """Save a figure; if Windows refuses (file open in a viewer, sync lock...) use a new name."""
+    path = out / name
+    try:
+        fig.savefig(path, dpi=130)
+    except OSError as e:
+        import time
+        alt = out / f"{path.stem}_{int(time.time())}{path.suffix}"
+        fig.savefig(alt, dpi=130)
+        print(f"NOTE: could not write {path} ({e}); saved {alt} instead. "
+              f"Close any program that has the old image open.")
+    plt.close(fig)
+
+
 def draw_grid(ax, grid, title, red=(), green=(), orig=None):
     ax.set_xlim(0, 9); ax.set_ylim(9, 0); ax.set_aspect("equal"); ax.axis("off"); ax.set_title(title, fontsize=10)
     for i in range(81):
@@ -102,7 +116,7 @@ draw_grid(ax[2], res.solution or [0] * 81, "Corrected + solved (green = correcte
 if res.confidence in ("low", "medium"):
     ax[2].text(4.5, 9.9, f"WARNING: {res.confidence.upper()} CONFIDENCE - treat as unverified",
                ha="center", color="red", fontsize=11, fontweight="bold")
-fig.tight_layout(); fig.savefig(out / "demo_overview.png", dpi=130); plt.close(fig)
+fig.tight_layout(); save_fig(fig, "demo_overview.png")
 
 # --- plots: cooperation of the three parts
 fixed = res.reading[:]
@@ -139,5 +153,5 @@ for lab, kw in modes:
     print(f"  {lab.replace(chr(10), ' '):28s}: {rr.status:10s} exact={good}  CSP calls={rr.goal_tests}{flag}")
 ax[1, 1].bar([m[0] for m in modes], ok, color=["#54a24b", "#e45756", "#e45756"]); ax[1, 1].set_ylim(0, 1.2)
 ax[1, 1].set_yticks([0, 1]); ax[1, 1].set_yticklabels(["failed", "exact solution"]); ax[1, 1].set_title("NN on vs off")
-fig.suptitle("How NN, Search and CSP cooperate"); fig.tight_layout(); fig.savefig(out / "demo_cooperation.png", dpi=130); plt.close(fig)
+fig.suptitle("How NN, Search and CSP cooperate"); fig.tight_layout(); save_fig(fig, "demo_cooperation.png")
 print("\nFigures: results/demo_overview.png, results/demo_cooperation.png")
