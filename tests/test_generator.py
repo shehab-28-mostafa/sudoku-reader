@@ -32,6 +32,7 @@ def test_instance_injection_and_blank_rule():
     n = 400
     y = np.repeat(np.arange(1, 10), n // 9 + 1)[:n]
     x = np.zeros((n, 784), np.float32) + 0.2
+    x[:, 0] = 1.0
     proba = np.full((n, 9), 0.01)
     proba[np.arange(n), y - 1] = 0.9
     proba[::5, :] = 0.01

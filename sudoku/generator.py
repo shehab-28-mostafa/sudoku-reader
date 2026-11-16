@@ -15,7 +15,7 @@ import numpy as np
 from .csp import solve
 
 BLANK_SIGMA = 0.01
-BLANK_MEAN_THRESHOLD = 0.04   # brightness rule used to detect blank cells
+BLANK_MAX_THRESHOLD = 0.25    # brightness rule: blank iff brightest pixel < 0.25
 
 
 def full_grid(rng: np.random.Generator) -> list[int]:
@@ -109,5 +109,8 @@ def to_mosaic(images: np.ndarray) -> np.ndarray:
 
 
 def blank_mask(images: np.ndarray) -> np.ndarray:
-    """Simple brightness rule (NOT the NN): a cell is blank if its mean pixel is low."""
-    return images.mean(axis=1) < BLANK_MEAN_THRESHOLD
+    """Simple brightness rule (NOT the NN): a cell is blank if its brightest pixel is
+    below 0.25. Blank cells are noise with max ~0.055; every MNIST digit has max 1.0.
+    (A mean-brightness rule was tried first and wrongly blanked ~0.3% of thin digits,
+    mostly 1s - see docs/data_dictionary.md.)"""
+    return images.max(axis=1) < BLANK_MAX_THRESHOLD
