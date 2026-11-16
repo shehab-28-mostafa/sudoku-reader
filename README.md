@@ -53,8 +53,6 @@ Notes
 | `results/demo_overview.png`, `demo_cooperation.png` | demo figures |
 | `results/exp_search.json`, `exp_csp.json`, `exp_confidence.json` | raw per-run records |
 
-See `docs/data_dictionary.md` for every data field, real vs generated.
-
 ## Headline results (real MNIST, 5 seeds)
 * **NN:** MLP 97.82 % test accuracy vs 92.16 % for logistic regression; ECE 0.0089 before and 0.0033 after temperature scaling (T = 1.45).
 * **Exp 1 (UCS / Greedy / A*):** A* and UCS always return the same optimal cost; A* expands far fewer nodes (3 misreads: UCS 48.5, Greedy 22.0, A* 8.4). Greedy returns a costlier correction set in about 11 % (2 misreads) to 21 % (3 misreads) of instances. Exact-solution recovery of A* with 1 / 2 / 3 misreads: 79.8 / 71.2 / 59.0 % with goal *solvable*, 93.6 / 89.2 / 86.0 % with goal *unique*. Level 4 exceeds the 3-correction limit and recovers 0 by design.
@@ -75,7 +73,7 @@ See `docs/data_dictionary.md` for every data field, real vs generated.
 | `sudoku/eval.py`, `run_experiments.py` | the three experiments, confidence evaluation, tables and plots |
 | `run_demo.py` | integrated demo |
 | `tests/` | 59 tests |
-| `docs/` | data dictionary, report, presentation outline, requirements checklist |
+| `docs/` | report, presentation outline|
 
 ## Design notes
 * **Cost:** ln p(read) - ln p(new). The read digit is the arg-max, so cost >= 0, which UCS and A* need.
