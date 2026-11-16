@@ -89,6 +89,23 @@ without any correction because it was still solvable, with a different solution.
 **unique** solution fixes most of these and raises recovery to 93.6 / 89.2 / 86.0 %, with fewer CSP
 calls because wrong candidates are rejected early.
 
+### Confidence flags (added after the first demo showed a silently wrong answer)
+A solved puzzle can be a valid Sudoku that is not the written one (for example when more misreads
+exist than corrections allowed). The system therefore attaches a confidence tier to every answer:
+**low** if the corrected puzzle has more than one solution; **medium** if a correction was very
+unlikely (> 2.5 nats) or the whole correction budget was used; otherwise **high**. Evaluated on
+1,000 generated puzzles (5 seeds x 40 per misread level 0-4; `results/confidence.md`):
+
+| tier | answers | % exactly right | share of all wrong answers |
+|---|---|---|---|
+| high | 471 | 90.2 | 14.6 |
+| medium | 248 | 78.6 | 16.8 |
+| low | 216 | 0.0 | 68.6 |
+
+85.4 % of wrong answers are flagged (medium or low) at the price of flagging 31.5 % of correct
+ones; the "low" tier was never right. The flag is a warning, not a guarantee: 14.6 % of wrong
+answers still come out as "high".
+
 ## 5. Integration, limits and honesty notes
 * The CSP is the final judge. The NN only orders the search; AC-3 only explains why the reading is
   broken.
@@ -98,6 +115,7 @@ calls because wrong candidates are rejected early.
 * Injected misreads are constructed: the true digit is always in the NN's top-3, so recovery is
   optimistic compared with real photographs. The natural MNIST error rate is only 2.2 %.
 * Seeds vary the generated puzzles and misreads, not the NN weights.
+* Silent errors: see the confidence flags above; 14.6 % of wrong answers are not flagged.
 * Limits: ≤ 3 corrections; a misread that leaves a unique, solvable puzzle (e.g. a different but
   consistent grid) cannot be detected at all; confident misreads outside the 20 least-confident
   cells would be missed (none occurred in these experiments).

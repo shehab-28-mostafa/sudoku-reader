@@ -6,7 +6,7 @@ and a **CSP** solver (Backtracking, Forward Checking, AC-3) tests each corrected
 first solvable one wins. If none works, the system reports "unreadable" and lists the least
 confident cells.
 
-**Status:** complete - 54 passing tests, 3 experiments x 5 seeds, demo, report draft.
+**Status:** complete - 59 passing tests, 3 experiments x 5 seeds, demo, report draft.
 
 ## Features
 - NumPy MLP digit classifier (97.8 % test accuracy) with temperature scaling; logistic-regression baseline.
@@ -14,6 +14,7 @@ confident cells.
 - UCS, Greedy and A* (admissible conflict heuristic) over correction sets, with node counters and a search trace.
 - Optional "unique solution" goal; seeded puzzle / mosaic / injected-misread generator.
 - Integrated pipeline, experiments, tables and plots.
+- **Confidence flag** on every answer (high / medium / low): warns when the solution is a valid Sudoku but may not be the written one.
 
 ## Project structure
 ```
@@ -22,7 +23,7 @@ train_nn.py         train MLP + logistic regression, save metrics
 run_demo.py         integrated demo (prints trace, writes figures)
 run_experiments.py  the three experiments (resumable, 5 seeds)
 sudoku/             data, nn, csp, search, generator, integration, eval
-tests/              pytest suite (54 tests)
+tests/              pytest suite (59 tests)
 docs/               data dictionary, report draft, presentation outline,
                     compliance checklist, contribution template
 results/            metrics, tables.md, plots, raw experiment JSON
@@ -49,7 +50,7 @@ Note: `data/mlp.npz` and `data/mnist19.npz` are git-ignored; regenerate with the
 
 ## Test
 ```bash
-python -m pytest -q               # 54 tests (CSP, generator, search, system cases)
+python -m pytest -q               # 59 tests (CSP, generator, search, system cases, confidence flags)
 ```
 
 ## Usage from Python
@@ -67,6 +68,17 @@ print(r.status, r.correction_log(), r.message)
 | exact recovery, NN-guided (solvable goal) | 100 % | 79.8 ± 3.3 | 71.2 ± 7.5 | 59.0 ± 5.3 | 0 (exceeds 3-correction budget) |
 | exact recovery, unique-solution goal | 100 % | 93.6 ± 1.5 | 89.2 ± 2.3 | 86.0 ± 2.0 | 0 |
 | no correction / random correction | 100 % | 0 / 15 | 0 / 0.4 | 0 / 0 | 0 / 0 |
+
+## Confidence flag
+`run_pipeline(...)` returns `confidence` ("high" / "medium" / "low") and `warnings`. **low** = the corrected puzzle
+has several solutions; **medium** = a very unlikely correction (> 2.5 nats) or all allowed corrections used.
+Measured: the "low" tier was never exactly right; 85 % of wrong answers are flagged, with 31 % false alarms
+(`results/confidence.md`). It is a warning, not a guarantee.
+
+## Machine differences
+Training the network on a different computer (e.g. Windows vs Linux) gives slightly different weights, so the
+demo instances, `results/` numbers you regenerate, and accuracy (about 97.8 %) may differ in the last digits from
+the ones in this README and report. The shipped `results/` files are from the original run.
 
 ## Limitations
 Misreads are *injected* (constructed from hard MNIST digits), the data are MNIST mosaics rather
