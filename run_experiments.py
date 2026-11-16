@@ -15,9 +15,9 @@ if not a.plots_only:
     ev.exp_csp(a.seeds, a.n_csp)
     ev.exp_search(a.seeds, a.n)
 import json
-sr = json.loads((ev.RESULTS / "exp_search.json").read_text())
-cr = json.loads((ev.RESULTS / "exp_csp.json").read_text())
-(ev.RESULTS / "tables.md").write_text(ev.tables(sr, cr))
+sr = json.loads((ev.RESULTS / "exp_search.json").read_text(encoding="utf-8"))
+cr = json.loads((ev.RESULTS / "exp_csp.json").read_text(encoding="utf-8"))
+(ev.RESULTS / "tables.md").write_text(ev.tables(sr, cr), encoding="utf-8")
 ev.plots(sr, cr)
 ev.nn_plots()
 print("Wrote results/tables.md and plots")

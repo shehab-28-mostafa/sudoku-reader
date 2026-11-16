@@ -41,5 +41,5 @@ print(f"LogReg trained in {time.time() - t:.0f}s")
 metrics["logreg"] = {"test_acc": float((lr.predict(d["x_test"]) == d["y_test"]).mean()),
                      "ece": expected_calibration_error(pl, d["y_test"])}
 np.save(res / "confusion_logreg.npy", confusion_matrix(lr.predict(d["x_test"]), d["y_test"]))
-(res / "nn_metrics.json").write_text(json.dumps(metrics, indent=2))
+(res / "nn_metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 print(json.dumps(metrics, indent=2))

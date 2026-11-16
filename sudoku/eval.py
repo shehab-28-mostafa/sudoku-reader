@@ -41,7 +41,7 @@ def _load():
 # ----------------------------------------------------------------------------
 def exp_search(seeds=5, n=100, givens=30, out=RESULTS / "exp_search.json", log=print):
     model, pool = _load()
-    records = json.loads(out.read_text()) if out.exists() else []
+    records = json.loads(out.read_text(encoding="utf-8")) if out.exists() else []
     done = {r["seed"] for r in records}
     for s in range(seeds):
         if s in done:
@@ -67,13 +67,13 @@ def exp_search(seeds=5, n=100, givens=30, out=RESULTS / "exp_search.json", log=p
                         n_corr=len(r.corrections), covered=cand_cover, time=dt,
                         n_injected=len(inst["injected"])))
         out.parent.mkdir(exist_ok=True)
-        out.write_text(json.dumps(records))
+        out.write_text(json.dumps(records), encoding="utf-8")
         log(f"[exp_search] seed {s} done in {time.time() - t0:.0f}s")
     return records
 
 
 def exp_csp(seeds=5, n=50, out=RESULTS / "exp_csp.json", cap=500_000, log=print):
-    records = json.loads(out.read_text()) if out.exists() else []
+    records = json.loads(out.read_text(encoding="utf-8")) if out.exists() else []
     done = {r["seed"] for r in records}
     for s in range(seeds):
         if s in done:
@@ -91,7 +91,7 @@ def exp_csp(seeds=5, n=50, out=RESULTS / "exp_csp.json", cap=500_000, log=print)
                                             status=r.status, correct=r.solution == sol,
                                             assignments=r.assignments, backtracks=r.backtracks,
                                             ac3_revisions=r.ac3_revisions, pruned=r.pruned, time=dt))
-        out.write_text(json.dumps(records))
+        out.write_text(json.dumps(records), encoding="utf-8")
         log(f"[exp_csp] seed {s} done")
     return records
 
