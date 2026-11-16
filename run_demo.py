@@ -78,7 +78,13 @@ if len(trace) > 12:
 print("\n=== 4. Correction log + CSP solution ===")
 for line in res.correction_log():
     print("  ", line)
-print("  status:", res.status, "|", res.message, "| exact recovery:", res.solution == inst["solution"])
+print("  status:", res.status, "| exact recovery (known only because this is a generated test):",
+      res.solution == inst["solution"])
+print(f"  CONFIDENCE: {res.confidence.upper()}")
+for w in res.warnings:
+    print(f"  !! WARNING: {w}")
+if res.confidence in ("low", "medium"):
+    print("  !! Treat this solution as UNVERIFIED - it is a valid Sudoku but may not be the written one.")
 
 # --- plots: overview
 fig, ax = plt.subplots(1, 3, figsize=(15, 5.2))
@@ -93,6 +99,9 @@ conf_cells = {x for a, b, _ in find_conflicts(res.reading) for x in (a, b)}
 draw_grid(ax[1], res.reading, "NN reading (red = conflict)", red=conf_cells)
 draw_grid(ax[2], res.solution or [0] * 81, "Corrected + solved (green = corrected, blue = CSP)",
           green={c for c, *_ in res.corrections}, orig=res.reading)
+if res.confidence in ("low", "medium"):
+    ax[2].text(4.5, 9.9, f"WARNING: {res.confidence.upper()} CONFIDENCE - treat as unverified",
+               ha="center", color="red", fontsize=11, fontweight="bold")
 fig.tight_layout(); fig.savefig(out / "demo_overview.png", dpi=130); plt.close(fig)
 
 # --- plots: cooperation of the three parts
@@ -114,7 +123,7 @@ rs = [solve(fixed, **kw) for _, kw in cfgs]
 w = .38
 ax[1, 0].bar(np.arange(3) - w / 2, [r.assignments for r in rs], w, label="assignments")
 ax[1, 0].bar(np.arange(3) + w / 2, [r.backtracks for r in rs], w, label="backtracks")
-ax[1, 0].set_xticks(range(3)); ax[1, 0].set_xticklabels([n for n, _ in cfgs]); ax[1, 0].set_yscale("log"); ax[1, 0].legend()
+ax[1, 0].set_xticks(range(3)); ax[1, 0].set_xticklabels([n for n, _ in cfgs]); ax[1, 0].set_yscale("symlog"); ax[1, 0].legend()
 ax[1, 0].set_title("CSP pruning on the corrected puzzle")
 print("\n=== 5. CSP pruning with / without FC and AC-3 (corrected puzzle) ===")
 for (n, _), r in zip(cfgs, rs):
@@ -126,7 +135,8 @@ for lab, kw in modes:
     rr = run_pipeline(inst["images"], model, rng=np.random.default_rng(0), **kw)
     good = rr.status == "solved" and rr.solution == inst["solution"]
     ok.append(1 if good else 0)
-    print(f"  {lab.replace(chr(10), ' '):28s}: {rr.status:10s} exact={good}  CSP calls={rr.goal_tests}")
+    flag = f"  confidence={rr.confidence}" if rr.status == "solved" else ""
+    print(f"  {lab.replace(chr(10), ' '):28s}: {rr.status:10s} exact={good}  CSP calls={rr.goal_tests}{flag}")
 ax[1, 1].bar([m[0] for m in modes], ok, color=["#54a24b", "#e45756", "#e45756"]); ax[1, 1].set_ylim(0, 1.2)
 ax[1, 1].set_yticks([0, 1]); ax[1, 1].set_yticklabels(["failed", "exact solution"]); ax[1, 1].set_title("NN on vs off")
 fig.suptitle("How NN, Search and CSP cooperate"); fig.tight_layout(); fig.savefig(out / "demo_cooperation.png", dpi=130); plt.close(fig)
